@@ -14,7 +14,6 @@
       background: white;
       padding: 10px;
       line-height: 18px;
-      color: #333;
       font-size: 14px;
     }
     .legend i {
@@ -23,6 +22,12 @@
       float: left;
       margin-right: 8px;
       opacity: 0.9;
+    }
+    .label-text {
+      font-size: 12px;
+      font-weight: bold;
+      color: #000;
+      text-shadow: 1px 1px 3px #fff;
     }
   </style>
 </head>
@@ -38,38 +43,51 @@
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    // Renkleri sınıflandır
-    function getColor(kod) {
-      switch (kod) {
-        case "5393 EBB Yetkisinde": return "#00FF00"; // yeşil
-        case "5393 EBB Yetkisi Dışında": return "#FFA500"; // turuncu
-        case "6306 Riskli Alan": return "#FF0000"; // kırmızı
-        case "6036 Rezerv Alan": return "#0000FF"; // mavi
+    // Sınıflara göre renk belirle
+    function getColor(turu) {
+      switch (turu) {
+        case 1: return "#00FF00"; // Yeşil
+        case 2: return "#FFA500"; // Turuncu
+        case 3: return "#FF0000"; // Kırmızı
+        case 4: return "#0000FF"; // Mavi
         default: return "#999999";
       }
     }
 
     function style(feature) {
       return {
-        fillColor: getColor(feature.properties.ALAN_TURU),
-        weight: 2,
+        fillColor: getColor(feature.properties.Türü),
+        weight: 1.5,
         opacity: 1,
-        color: "#666",
+        color: "#333",
         fillOpacity: 0.6
       };
     }
 
     function onEachFeature(feature, layer) {
+      // Açılır pencere: tüm öznitelikler
       let popupContent = "<b>Öznitelik Bilgileri</b><br><ul>";
       for (const key in feature.properties) {
         popupContent += `<li><b>${key}:</b> ${feature.properties[key]}</li>`;
       }
       popupContent += "</ul>";
       layer.bindPopup(popupContent);
+
+      // Etiket: alan_adı harita üzerinde yazı
+      if (feature.properties.alan_adı) {
+        const center = layer.getBounds().getCenter();
+        const label = L.marker(center, {
+          icon: L.divIcon({
+            className: 'label-text',
+            html: feature.properties.alan_adı,
+            iconSize: [100, 20]
+          })
+        }).addTo(map);
+      }
     }
 
     fetch("data/KENTSEL.geojson")
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
         L.geoJSON(data, {
           style: style,
@@ -77,7 +95,7 @@
         }).addTo(map);
       });
 
-    // LEJAND
+    // Lejant
     const legend = L.control({ position: "bottomright" });
     legend.onAdd = function () {
       const div = L.DomUtil.create("div", "legend");
