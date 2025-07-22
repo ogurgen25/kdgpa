@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kentsel Dönüşüm Alanları</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+    }
+    .legend {
+      background: white;
+      padding: 10px;
+      line-height: 18px;
+      color: #333;
+      font-size: 14px;
+    }
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    const map = L.map("map").setView([39.9, 41.2], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    // Renkleri sınıflandır
+    function getColor(kod) {
+      switch (kod) {
+        case "5393 EBB Yetkisinde": return "#00FF00"; // yeşil
+        case "5393 EBB Yetkisi Dışında": return "#FFA500"; // turuncu
+        case "6306 Riskli Alan": return "#FF0000"; // kırmızı
+        case "6036 Rezerv Alan": return "#0000FF"; // mavi
+        default: return "#999999";
+      }
+    }
+
+    function style(feature) {
+      return {
+        fillColor: getColor(feature.properties.ALAN_TURU),
+        weight: 2,
+        opacity: 1,
+        color: "#666",
+        fillOpacity: 0.6
+      };
+    }
+
+    function onEachFeature(feature, layer) {
+      let popupContent = "<b>Öznitelik Bilgileri</b><br><ul>";
+      for (const key in feature.properties) {
+        popupContent += `<li><b>${key}:</b> ${feature.properties[key]}</li>`;
+      }
+      popupContent += "</ul>";
+      layer.bindPopup(popupContent);
+    }
+
+    fetch("data/KENTSEL.geojson")
+      .then(response => response.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: style,
+          onEachFeature: onEachFeature
+        }).addTo(map);
+      });
+
+    // LEJAND
+    const legend = L.control({ position: "bottomright" });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create("div", "legend");
+      const categories = [
+        ["#00FF00", "5393 EBB Yetkisinde"],
+        ["#FFA500", "5393 EBB Yetkisi Dışında"],
+        ["#FF0000", "6306 Riskli Alan"],
+        ["#0000FF", "6036 Rezerv Alan"]
+      ];
+      categories.forEach(([color, label]) => {
+        div.innerHTML += `<i style="background:${color}"></i>${label}<br>`;
+      });
+      return div;
+    };
+    legend.addTo(map);
+  </script>
+</body>
+</html>
