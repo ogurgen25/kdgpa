@@ -15,6 +15,7 @@
       padding: 10px;
       line-height: 18px;
       font-size: 14px;
+      box-shadow: 0 0 5px #888;
     }
     .legend i {
       width: 18px;
@@ -43,14 +44,14 @@
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    // Sınıflara göre renk belirle
-    function getColor(turu) {
-      switch (turu) {
-        case 1: return "#00FF00"; // Yeşil
-        case 2: return "#FFA500"; // Turuncu
-        case 3: return "#FF0000"; // Kırmızı
-        case 4: return "#0000FF"; // Mavi
-        default: return "#999999";
+    // Renkler tür numarasına göre atanıyor
+    function getColor(tur) {
+      switch (tur) {
+        case 1: return "#00FF00"; // 5393 EBB Yetkisinde (Yeşil)
+        case 2: return "#FFA500"; // 5393 EBB Yetkisi Dışında (Turuncu)
+        case 3: return "#FF0000"; // 6306 Riskli Alan (Kırmızı)
+        case 4: return "#0000FF"; // 6036 Rezerv Alan (Mavi)
+        default: return "#CCCCCC"; // Diğerleri
       }
     }
 
@@ -65,7 +66,7 @@
     }
 
     function onEachFeature(feature, layer) {
-      // Açılır pencere: tüm öznitelikler
+      // Tüm öznitelikleri göster
       let popupContent = "<b>Öznitelik Bilgileri</b><br><ul>";
       for (const key in feature.properties) {
         popupContent += `<li><b>${key}:</b> ${feature.properties[key]}</li>`;
@@ -73,10 +74,10 @@
       popupContent += "</ul>";
       layer.bindPopup(popupContent);
 
-      // Etiket: alan_adı harita üzerinde yazı
+      // Harita üzerinde alan_adı göster
       if (feature.properties.alan_adı) {
         const center = layer.getBounds().getCenter();
-        const label = L.marker(center, {
+        L.marker(center, {
           icon: L.divIcon({
             className: 'label-text',
             html: feature.properties.alan_adı,
@@ -86,6 +87,7 @@
       }
     }
 
+    // Kentsel geojson katmanı
     fetch("data/KENTSEL.geojson")
       .then(res => res.json())
       .then(data => {
