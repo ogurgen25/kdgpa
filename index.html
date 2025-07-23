@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Kentsel Dönüşüm Alanları</title>
+  <title>Kentsel Alan Etiketleri</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
@@ -28,12 +28,11 @@
     }
 
     .label-text {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: bold;
-      color: black;
+      color: #000;
       text-shadow: 1px 1px 4px white;
       pointer-events: none;
-      z-index: 1000;
     }
   </style>
 </head>
@@ -61,52 +60,56 @@
 
     function style(feature) {
       return {
-        fillColor: "#ffffff00", // içi boş
+        fillColor: "#ffffff00",
         color: getColor(feature.properties.tur),
         weight: 2,
         opacity: 1
       };
     }
 
-    function onEachFeature(feature, layer) {
-      let popupContent = "<b>Öznitelik Bilgileri</b><br><ul>";
-      for (const key in feature.properties) {
-        let value = feature.properties[key];
-        if (key === "meclis_karar_tarih" && typeof value === "number") {
-          value = new Date(value).toLocaleString("tr-TR");
-        }
-        popupContent += `<li><b>${key}:</b> ${value}</li>`;
-      }
-      popupContent += "</ul>";
-      layer.bindPopup(popupContent);
-
-      // Etiket: alan_adi varsa yaz
-      if (feature.properties.alan_adi) {
-        const center = layer.getBounds().getCenter();
-        const label = L.marker(center, {
-          icon: L.divIcon({
-            className: 'label-text',
-            html: feature.properties.alan_adi,
-            iconSize: [100, 20]
-          })
-        });
-        label.addTo(map);
-      }
+    function createLabel(text, center) {
+      return L.marker(center, {
+        icon: L.divIcon({
+          className: "label-text",
+          html: text,
+          iconAnchor: [0, 0]
+        }),
+        interactive: false
+      }).addTo(map);
     }
 
-    // GeoJSON'u yükle ve tüm alanlara zoom yap
     fetch("data/KENTSEL.geojson")
       .then(res => res.json())
       .then(data => {
-        const geoLayer = L.geoJSON(data, {
+        const layer = L.geoJSON(data, {
           style: style,
-          onEachFeature: onEachFeature
+          onEachFeature: function (feature, layer) {
+            // Popup
+            let popupContent = "<b>Öznitelik Bilgileri</b><ul>";
+            for (const key in feature.properties) {
+              let value = feature.properties[key];
+              if (key === "meclis_karar_tarih" && typeof value === "number") {
+                value = new Date(value).toLocaleString("tr-TR");
+              }
+              popupContent += `<li><b>${key}:</b> ${value}</li>`;
+            }
+            popupContent += "</ul>";
+            layer.bindPopup(popupContent);
+
+            // Etiket
+            const name = feature.properties.alan_adi;
+            if (name) {
+              const center = layer.getBounds().getCenter();
+              createLabel(name, center);
+            }
+          }
         }).addTo(map);
 
-        // Harita başlangıçta tüm alanlara zoom yapsın
-        map.fitBounds(geoLayer.getBounds());
+        // Otomatik zoom
+        map.fitBounds(layer.getBounds());
       });
 
+    // Lejant
     const legend = L.control({ position: "bottomright" });
     legend.onAdd = function () {
       const div = L.DomUtil.create("div", "legend");
