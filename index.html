@@ -44,7 +44,7 @@
     const map = L.map("map");
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 20,
+      maxZoom: 10,
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
@@ -62,7 +62,7 @@
       return {
         fillColor: "#ffffff00",
         color: getColor(feature.properties.tur),
-        weight: 2,
+        weight: 4,
         opacity: 1
       };
     }
@@ -97,7 +97,7 @@
             layer.bindPopup(popupContent);
 
             // Etiket
-            const name = feature.properties.alan_adi;
+            const name = feature.properties.alan_adı;
             if (name) {
               const center = layer.getBounds().getCenter();
               createLabel(name, center);
