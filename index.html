@@ -42,7 +42,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-    const map = L.map("map").setView([39.9, 41.2], 17);
+    const map = L.map("map");
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 20,
@@ -62,8 +62,8 @@
     function style(feature) {
       return {
         fillColor: "#ffffff00", // içi boş
-        color: getColor(feature.properties.tur), // kenar renk
-        weight: 3, // kenar kalınlığı
+        color: getColor(feature.properties.tur),
+        weight: 2,
         opacity: 1
       };
     }
@@ -80,7 +80,7 @@
       popupContent += "</ul>";
       layer.bindPopup(popupContent);
 
-      // Etiket (her zaman görünür)
+      // Etiket: alan_adi varsa yaz
       if (feature.properties.alan_adi) {
         const center = layer.getBounds().getCenter();
         const label = L.marker(center, {
@@ -94,13 +94,17 @@
       }
     }
 
+    // GeoJSON'u yükle ve tüm alanlara zoom yap
     fetch("data/KENTSEL.geojson")
       .then(res => res.json())
       .then(data => {
-        L.geoJSON(data, {
+        const geoLayer = L.geoJSON(data, {
           style: style,
           onEachFeature: onEachFeature
         }).addTo(map);
+
+        // Harita başlangıçta tüm alanlara zoom yapsın
+        map.fitBounds(geoLayer.getBounds());
       });
 
     const legend = L.control({ position: "bottomright" });
