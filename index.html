@@ -38,6 +38,38 @@
       text-shadow: 1px 1px 2px black;
       text-align: center;
     }
+
+    .legend {
+      position: absolute;
+      bottom: 20px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 18px;
+      border-radius: 4px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+    }
+
+    .legend h4 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+
+    .legend div {
+      display: flex;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+
+    .legend span {
+      display: inline-block;
+      width: 20px;
+      height: 12px;
+      margin-right: 6px;
+      border: 1px solid #000;
+    }
   </style>
 </head>
 <body>
@@ -45,6 +77,14 @@
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="Ada-Parsel (örn: 123/45)" />
     <button onclick="searchParsel()">Ara</button>
+  </div>
+
+  <div class="legend">
+    <h4>Kentsel Dönüşüm Türleri</h4>
+    <div><span style="background:#00FF00"></span> 1 - 5393 EBB Yetkisinde</div>
+    <div><span style="background:#FFA500"></span> 2 - 5393 EBB Yetkisi Dışında</div>
+    <div><span style="background:#FF0000"></span> 3 - 6306 Riskli Alan</div>
+    <div><span style="background:#0000FF"></span> 4 - 6036 Rezerv Alan</div>
   </div>
 
   <div id="map"></div>
@@ -92,11 +132,29 @@
           },
           onEachFeature: function (feature, layer) {
             const center = layer.getBounds().getCenter();
-            const name = feature.properties.alan_adı;
-            if (name) {
-              kentselLabels.addLayer(createLabel(name, center));
+            const name = feature.properties.alan_adı || "İsimsiz Alan";
+            kentselLabels.addLayer(createLabel(name, center));
+
+            // Tüm öznitelikleri listele, tarih formatını dönüştür
+            const props = feature.properties;
+            let popup = "<b>Öznitelik Bilgileri:</b><ul>";
+            for (let key in props) {
+              let value = props[key];
+              if (key === "meclis_karar_tarihi" && value) {
+                try {
+                  const date = new Date(value);
+                  if (!isNaN(date)) {
+                    const gun = String(date.getDate()).padStart(2, "0");
+                    const ay = String(date.getMonth() + 1).padStart(2, "0");
+                    const yil = date.getFullYear();
+                    value = `${gun}.${ay}.${yil}`;
+                  }
+                } catch (e) {}
+              }
+              popup += `<li><b>${key}:</b> ${value}</li>`;
             }
-            layer.bindPopup(`<b>${name}</b>`);
+            popup += "</ul>";
+            layer.bindPopup(popup);
           }
         }).addTo(map);
         map.fitBounds(layer.getBounds());
@@ -124,7 +182,7 @@
         }).addTo(map);
       });
 
-    // === YAPI === (etiket yok, sadece popup)
+    // === YAPI ===
     fetch("data/YAPI.geojson")
       .then(res => res.json())
       .then(data => {
