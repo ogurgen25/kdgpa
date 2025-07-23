@@ -33,10 +33,7 @@
       color: #000;
       text-shadow: 1px 1px 3px #fff;
       text-align: center;
-      white-space: nowrap;
-      max-width: 80px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
     }
   </style>
 </head>
@@ -76,8 +73,8 @@
         icon: L.divIcon({
           className: "label-text",
           html: text,
-          iconSize: [80, 20],
-          iconAnchor: [40, 10]
+          iconSize: null,
+          iconAnchor: [0, 0]
         }),
         interactive: false
       }).addTo(map);
@@ -100,6 +97,7 @@
             popupContent += "</ul>";
             layer.bindPopup(popupContent);
 
+            // Etiket: alan_adı (doğru alan adı)
             if (feature.properties.alan_adı) {
               const center = layer.getBounds().getCenter();
               createLabel(feature.properties.alan_adı, center);
