@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Kentsel Dönüşüm Alanları</title>
+  <title>Kentsel Bilgi Sistemi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
@@ -30,14 +30,39 @@
     .label-text {
       font-size: 10px;
       font-weight: bold;
-      color: #000;
-      text-shadow: 1px 1px 3px #fff;
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
       text-align: center;
-      white-space: normal;
+      white-space: nowrap;
+    }
+
+    .search-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 6px;
+      border-radius: 4px;
+      box-shadow: 0 0 5px #999;
+    }
+
+    .search-box input {
+      padding: 5px;
+      width: 140px;
+    }
+
+    .search-box button {
+      padding: 5px;
     }
   </style>
 </head>
 <body>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Ada-Parsel (örn: 123/45)" />
+    <button onclick="searchParsel()">Ara</button>
+  </div>
+
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -49,80 +74,133 @@
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    function getColor(tur) {
-      switch (parseInt(tur)) {
-        case 1: return "#00FF00";
-        case 2: return "#FFA500";
-        case 3: return "#FF0000";
-        case 4: return "#0000FF";
-        default: return "#999999";
-      }
-    }
+    let parselLayer;
+    let yapiLayer;
 
-    function style(feature) {
-      return {
-        fillColor: "#ffffff00", // içi boş
-        color: getColor(feature.properties.tur),
-        weight: 5,
-        opacity: 1
-      };
-    }
-
-    function createLabel(text, center) {
+    function createLabel(text, center, color = "#000") {
       return L.marker(center, {
         icon: L.divIcon({
           className: "label-text",
           html: text,
           iconSize: null,
-          iconAnchor: [0, 0]
+          iconAnchor: [0, 0],
         }),
         interactive: false
       }).addTo(map);
     }
 
+    // PARSEL
+    fetch("data/PARSEL.geojson")
+      .then(res => res.json())
+      .then(data => {
+        parselLayer = L.geoJSON(data, {
+          style: {
+            color: "#cc0000",
+            fillColor: "#ff9999",
+            fillOpacity: 0.6,
+            weight: 1.5
+          },
+          onEachFeature: function (feature, layer) {
+            if (feature.properties.ada_parsel) {
+              const center = layer.getBounds().getCenter();
+              createLabel(feature.properties.ada_parsel, center, "#fff");
+            }
+
+            // popup
+            let popup = "<b>Parsel Bilgisi</b><ul>";
+            for (let k in feature.properties) {
+              popup += `<li><b>${k}:</b> ${feature.properties[k]}</li>`;
+            }
+            popup += "</ul>";
+            layer.bindPopup(popup);
+          }
+        }).addTo(map);
+      });
+
+    // YAPI
+    fetch("data/YAPI.geojson")
+      .then(res => res.json())
+      .then(data => {
+        yapiLayer = L.geoJSON(data, {
+          style: {
+            color: "#666",
+            fillColor: "#999999",
+            fillOpacity: 0.9,
+            weight: 1
+          },
+          onEachFeature: function (feature, layer) {
+            let popup = "<b>Yapı Bilgisi</b><ul>";
+            for (let k in feature.properties) {
+              popup += `<li><b>${k}:</b> ${feature.properties[k]}</li>`;
+            }
+            popup += "</ul>";
+            layer.bindPopup(popup);
+          }
+        }).addTo(map);
+      });
+
+    // KENTSEL
     fetch("data/KENTSEL.geojson")
       .then(res => res.json())
       .then(data => {
         const layer = L.geoJSON(data, {
-          style: style,
-          onEachFeature: function (feature, layer) {
-            let popupContent = "<b>Öznitelik Bilgileri</b><ul>";
-            for (const key in feature.properties) {
-              let value = feature.properties[key];
-              if (key === "meclis_karar_tarih" && typeof value === "number") {
-                value = new Date(value).toLocaleString("tr-TR");
-              }
-              popupContent += `<li><b>${key}:</b> ${value}</li>`;
-            }
-            popupContent += "</ul>";
-            layer.bindPopup(popupContent);
+          style: function (feature) {
+            const tur = feature.properties.tur;
+            const renk = {
+              1: "#00FF00",
+              2: "#FFA500",
+              3: "#FF0000",
+              4: "#0000FF"
+            }[tur] || "#999999";
 
-            // Etiket: alan_adı (doğru alan adı)
-            if (feature.properties.alan_adı) {
+            return {
+              fillColor: "#ffffff00",
+              color: renk,
+              weight: 2,
+              opacity: 1
+            };
+          },
+          onEachFeature: function (feature, layer) {
+            const name = feature.properties.alan_adı;
+            if (name) {
               const center = layer.getBounds().getCenter();
-              createLabel(feature.properties.alan_adı, center);
+              createLabel(name, center, "#000");
             }
+
+            let popup = "<b>Kentsel Alan Bilgisi</b><ul>";
+            for (let k in feature.properties) {
+              let v = feature.properties[k];
+              if (k === "meclis_karar_tarih" && typeof v === "number") {
+                v = new Date(v).toLocaleString("tr-TR");
+              }
+              popup += `<li><b>${k}:</b> ${v}</li>`;
+            }
+            popup += "</ul>";
+            layer.bindPopup(popup);
           }
         }).addTo(map);
 
         map.fitBounds(layer.getBounds());
       });
 
-    const legend = L.control({ position: "bottomright" });
-    legend.onAdd = function () {
-      const div = L.DomUtil.create("div", "legend");
-      const categories = [
-        ["#00FF00", "5393 EBB Yetkisinde"],
-        ["#FFA500", "5393 EBB Yetkisi Dışında"],
-        ["#FF0000", "6306 Riskli Alan"],
-        ["#0000FF", "6036 Rezerv Alan"]
-      ];
-      categories.forEach(([color, label]) => {
-        div.innerHTML += `<i style="background:${color}"></i>${label}<br>`;
+    // Arama
+    function searchParsel() {
+      const input = document.getElementById("searchInput").value.trim();
+      if (!input || !parselLayer) return alert("Aranacak ada-parsel girin.");
+
+      let found = false;
+
+      parselLayer.eachLayer(function (layer) {
+        const val = layer.feature.properties.ada_parsel;
+        if (val && val.toString() === input) {
+          map.fitBounds(layer.getBounds());
+          layer.openPopup();
+          found = true;
+        }
       });
-      return div;
-    };
-    legend.addTo(map);
+
+      if (!found) alert("Parsel bulunamadı.");
+    }
   </script>
 </body>
 </html>
