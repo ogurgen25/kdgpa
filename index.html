@@ -86,7 +86,7 @@
             return {
               fillColor: "#ffffff00",
               color: renk,
-              weight: 2,
+              weight: 6,
               opacity: 1
             };
           },
@@ -124,7 +124,7 @@
         }).addTo(map);
       });
 
-    // === YAPI === (etiket YOK, sadece popup)
+    // === YAPI === (etiket yok, sadece popup)
     fetch("data/YAPI.geojson")
       .then(res => res.json())
       .then(data => {
@@ -168,6 +168,7 @@
         if (val && val.toString() === input) {
           map.fitBounds(layer.getBounds());
           layer.openPopup();
+          alert("Kentsel Dönüşüm Alanındasınız");
           found = true;
         }
       });
