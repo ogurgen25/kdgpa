@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Kentsel Alan Etiketleri</title>
+  <title>Kentsel Dönüşüm Alanları</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
@@ -28,11 +28,15 @@
     }
 
     .label-text {
-      font-size: 14px;
+      font-size: 10px;
       font-weight: bold;
       color: #000;
-      text-shadow: 1px 1px 4px white;
-      pointer-events: none;
+      text-shadow: 1px 1px 3px #fff;
+      text-align: center;
+      white-space: nowrap;
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   </style>
 </head>
@@ -44,7 +48,7 @@
     const map = L.map("map");
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 25,
+      maxZoom: 20,
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
@@ -60,9 +64,9 @@
 
     function style(feature) {
       return {
-        fillColor: "#ffffff00",
+        fillColor: "#ffffff00", // içi boş
         color: getColor(feature.properties.tur),
-        weight: 4,
+        weight: 5,
         opacity: 1
       };
     }
@@ -72,7 +76,8 @@
         icon: L.divIcon({
           className: "label-text",
           html: text,
-          iconAnchor: [0, 0]
+          iconSize: [80, 20],
+          iconAnchor: [40, 10]
         }),
         interactive: false
       }).addTo(map);
@@ -84,7 +89,6 @@
         const layer = L.geoJSON(data, {
           style: style,
           onEachFeature: function (feature, layer) {
-            // Popup
             let popupContent = "<b>Öznitelik Bilgileri</b><ul>";
             for (const key in feature.properties) {
               let value = feature.properties[key];
@@ -96,20 +100,16 @@
             popupContent += "</ul>";
             layer.bindPopup(popupContent);
 
-            // Etiket
-            const name = feature.properties.alan_adı;
-            if (name) {
+            if (feature.properties.alan_adı) {
               const center = layer.getBounds().getCenter();
-              createLabel(name, center);
+              createLabel(feature.properties.alan_adi, center);
             }
           }
         }).addTo(map);
 
-        // Otomatik zoom
         map.fitBounds(layer.getBounds());
       });
 
-    // Lejant
     const legend = L.control({ position: "bottomright" });
     legend.onAdd = function () {
       const div = L.DomUtil.create("div", "legend");
