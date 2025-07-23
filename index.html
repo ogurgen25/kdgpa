@@ -2,38 +2,13 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Kentsel Bilgi Sistemi</title>
+  <title>Kensel Dönüşüm Başkanlığı Bilgi Sistemi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
     html, body, #map {
-      height: 100%;
       margin: 0;
-    }
-
-    .legend {
-      background: white;
-      padding: 10px;
-      line-height: 18px;
-      font-size: 14px;
-      box-shadow: 0 0 5px #888;
-    }
-
-    .legend i {
-      width: 18px;
-      height: 18px;
-      float: left;
-      margin-right: 8px;
-      opacity: 0.9;
-    }
-
-    .label-text {
-      font-size: 10px;
-      font-weight: bold;
-      color: #fff;
-      text-shadow: 1px 1px 2px #000;
-      text-align: center;
-      white-space: nowrap;
+      height: 100%;
     }
 
     .search-box {
@@ -42,22 +17,31 @@
       left: 10px;
       z-index: 1000;
       background: white;
-      padding: 6px;
+      padding: 5px;
       border-radius: 4px;
-      box-shadow: 0 0 5px #999;
+      box-shadow: 0 0 4px #666;
     }
 
     .search-box input {
       padding: 5px;
-      width: 140px;
+      width: 130px;
     }
 
     .search-box button {
       padding: 5px;
     }
+
+    .label-text {
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px black;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="Ada-Parsel (örn: 123/45)" />
     <button onclick="searchParsel()">Ara</button>
@@ -68,91 +52,37 @@
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
     const map = L.map("map");
+    let parselLayer, parselLabels = L.layerGroup(), yapiLabels = L.layerGroup(), kentselLabels = L.layerGroup();
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 20,
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    let parselLayer;
-    let yapiLayer;
-
-    function createLabel(text, center, color = "#000") {
+    function createLabel(text, center, className = "label-text") {
       return L.marker(center, {
         icon: L.divIcon({
-          className: "label-text",
+          className: className,
           html: text,
           iconSize: null,
-          iconAnchor: [0, 0],
+          iconAnchor: [0, 0]
         }),
         interactive: false
-      }).addTo(map);
+      });
     }
 
-    // PARSEL
-    fetch("data/PARSEL.geojson")
-      .then(res => res.json())
-      .then(data => {
-        parselLayer = L.geoJSON(data, {
-          style: {
-            color: "#cc0000",
-            fillColor: "#ff9999",
-            fillOpacity: 0.6,
-            weight: 1.5
-          },
-          onEachFeature: function (feature, layer) {
-            if (feature.properties.ada_parsel) {
-              const center = layer.getBounds().getCenter();
-              createLabel(feature.properties.ada_parsel, center, "#fff");
-            }
-
-            // popup
-            let popup = "<b>Parsel Bilgisi</b><ul>";
-            for (let k in feature.properties) {
-              popup += `<li><b>${k}:</b> ${feature.properties[k]}</li>`;
-            }
-            popup += "</ul>";
-            layer.bindPopup(popup);
-          }
-        }).addTo(map);
-      });
-
-    // YAPI
-    fetch("data/YAPI.geojson")
-      .then(res => res.json())
-      .then(data => {
-        yapiLayer = L.geoJSON(data, {
-          style: {
-            color: "#666",
-            fillColor: "#999999",
-            fillOpacity: 0.9,
-            weight: 1
-          },
-          onEachFeature: function (feature, layer) {
-            let popup = "<b>Yapı Bilgisi</b><ul>";
-            for (let k in feature.properties) {
-              popup += `<li><b>${k}:</b> ${feature.properties[k]}</li>`;
-            }
-            popup += "</ul>";
-            layer.bindPopup(popup);
-          }
-        }).addTo(map);
-      });
-
-    // KENTSEL
+    // === KENTSEL ===
     fetch("data/KENTSEL.geojson")
       .then(res => res.json())
       .then(data => {
         const layer = L.geoJSON(data, {
           style: function (feature) {
-            const tur = feature.properties.tur;
             const renk = {
               1: "#00FF00",
               2: "#FFA500",
               3: "#FF0000",
               4: "#0000FF"
-            }[tur] || "#999999";
-
+            }[feature.properties.tur] || "#999";
             return {
               fillColor: "#ffffff00",
               color: renk,
@@ -161,36 +91,80 @@
             };
           },
           onEachFeature: function (feature, layer) {
+            const center = layer.getBounds().getCenter();
             const name = feature.properties.alan_adı;
             if (name) {
-              const center = layer.getBounds().getCenter();
-              createLabel(name, center, "#000");
+              kentselLabels.addLayer(createLabel(name, center));
             }
-
-            let popup = "<b>Kentsel Alan Bilgisi</b><ul>";
-            for (let k in feature.properties) {
-              let v = feature.properties[k];
-              if (k === "meclis_karar_tarih" && typeof v === "number") {
-                v = new Date(v).toLocaleString("tr-TR");
-              }
-              popup += `<li><b>${k}:</b> ${v}</li>`;
-            }
-            popup += "</ul>";
-            layer.bindPopup(popup);
+            layer.bindPopup(`<b>${name}</b>`);
           }
         }).addTo(map);
-
         map.fitBounds(layer.getBounds());
       });
 
-    // Arama
+    // === PARSEL ===
+    fetch("data/PARSEL.geojson")
+      .then(res => res.json())
+      .then(data => {
+        parselLayer = L.geoJSON(data, {
+          style: {
+            color: "#cc0000",
+            fillColor: "#ff9999",
+            fillOpacity: 0.6,
+            weight: 1
+          },
+          onEachFeature: function (feature, layer) {
+            const center = layer.getBounds().getCenter();
+            const label = feature.properties.ada_parsel;
+            if (label) {
+              parselLabels.addLayer(createLabel(label, center));
+            }
+            layer.bindPopup(`<b>${label}</b>`);
+          }
+        }).addTo(map);
+      });
+
+    // === YAPI ===
+    fetch("data/YAPI.geojson")
+      .then(res => res.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: {
+            color: "#444",
+            fillColor: "#888",
+            fillOpacity: 0.8,
+            weight: 1
+          },
+          onEachFeature: function (feature, layer) {
+            const name = feature.properties.yapi_adi || "Yapı";
+            const center = layer.getBounds().getCenter();
+            yapiLabels.addLayer(createLabel(name, center));
+            layer.bindPopup(`<b>${name}</b>`);
+          }
+        }).addTo(map);
+      });
+
+    // === ZOOM ile Etiket Kontrol ===
+    map.on("zoomend", () => {
+      const z = map.getZoom();
+      if (z >= 17) {
+        map.addLayer(parselLabels);
+        map.addLayer(kentselLabels);
+        map.addLayer(yapiLabels);
+      } else {
+        map.removeLayer(parselLabels);
+        map.removeLayer(kentselLabels);
+        map.removeLayer(yapiLabels);
+      }
+    });
+
+    // === ARAMA ===
     function searchParsel() {
       const input = document.getElementById("searchInput").value.trim();
-      if (!input || !parselLayer) return alert("Aranacak ada-parsel girin.");
+      if (!input || !parselLayer) return alert("Ada/Parsel girin!");
 
       let found = false;
-
-      parselLayer.eachLayer(function (layer) {
+      parselLayer.eachLayer(layer => {
         const val = layer.feature.properties.ada_parsel;
         if (val && val.toString() === input) {
           map.fitBounds(layer.getBounds());
