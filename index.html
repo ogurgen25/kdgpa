@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Kensel Dönüşüm Başkanlığı Bilgi Sistemi</title>
+  <title>Kentsel Bilgi Sistemi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
@@ -52,17 +52,17 @@
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
     const map = L.map("map");
-    let parselLayer, parselLabels = L.layerGroup(), yapiLabels = L.layerGroup(), kentselLabels = L.layerGroup();
+    let parselLayer, parselLabels = L.layerGroup(), kentselLabels = L.layerGroup();
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 20,
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    function createLabel(text, center, className = "label-text") {
+    function createLabel(text, center) {
       return L.marker(center, {
         icon: L.divIcon({
-          className: className,
+          className: 'label-text',
           html: text,
           iconSize: null,
           iconAnchor: [0, 0]
@@ -86,7 +86,7 @@
             return {
               fillColor: "#ffffff00",
               color: renk,
-              weight: 6,
+              weight: 2,
               opacity: 1
             };
           },
@@ -124,7 +124,7 @@
         }).addTo(map);
       });
 
-    // === YAPI ===
+    // === YAPI === (etiket YOK, sadece popup)
     fetch("data/YAPI.geojson")
       .then(res => res.json())
       .then(data => {
@@ -136,10 +136,11 @@
             weight: 1
           },
           onEachFeature: function (feature, layer) {
-            const name = feature.properties.yapi_adi || "Yapı";
-            const center = layer.getBounds().getCenter();
-            yapiLabels.addLayer(createLabel(name, center));
-            layer.bindPopup(`<b>${name}</b>`);
+            const props = feature.properties;
+            let popup = "<ul>";
+            for (let k in props) popup += `<li><b>${k}:</b> ${props[k]}</li>`;
+            popup += "</ul>";
+            layer.bindPopup(popup);
           }
         }).addTo(map);
       });
@@ -150,11 +151,9 @@
       if (z >= 17) {
         map.addLayer(parselLabels);
         map.addLayer(kentselLabels);
-        map.addLayer(yapiLabels);
       } else {
         map.removeLayer(parselLabels);
         map.removeLayer(kentselLabels);
-        map.removeLayer(yapiLabels);
       }
     });
 
@@ -173,7 +172,7 @@
         }
       });
 
-      if (!found) alert("Parsel bulunamadı.Kentsel Dönüşüm Alanında Değilsiniz.");
+      if (!found) alert("Parsel bulunamadı.");
     }
   </script>
 </body>
