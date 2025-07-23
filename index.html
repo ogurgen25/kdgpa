@@ -29,6 +29,7 @@
       font-weight: bold;
       color: #000;
       text-shadow: 1px 1px 3px #fff;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -37,53 +38,65 @@
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-    const map = L.map("map").setView([39.9, 41.2], 13);
+    const map = L.map("map").setView([39.9, 41.2], 14);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
+      maxZoom: 20,
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    // Renkler: tur alanına göre
+    // Renkleri tur değerine göre ata
     function getColor(tur) {
       switch (parseInt(tur)) {
-        case 1: return "#00FF00"; // 5393 EBB Yetkisinde
-        case 2: return "#FFA500"; // 5393 EBB Yetkisi Dışında
-        case 3: return "#FF0000"; // 6306 Riskli Alan
-        case 4: return "#0000FF"; // 6036 Rezerv Alan
-        default: return "#CCCCCC";
+        case 1: return "#00FF00";
+        case 2: return "#FFA500";
+        case 3: return "#FF0000";
+        case 4: return "#0000FF";
+        default: return "#999999";
       }
     }
 
+    // Şekil stili: içi boş, kenar çizgisi renkli
     function style(feature) {
       return {
-        fillColor: getColor(feature.properties.tur),
-        weight: 1.5,
-        opacity: 1,
-        color: "#333",
-        fillOpacity: 0.6
+        fillColor: "#ffffff00", // tamamen şeffaf
+        color: getColor(feature.properties.tur), // kenar çizgisi renkli
+        weight: 2,
+        opacity: 1
       };
     }
+
+    let labelMarkers = [];
 
     function onEachFeature(feature, layer) {
       // Tüm öznitelikleri açılır pencerede göster
       let popupContent = "<b>Öznitelik Bilgileri</b><br><ul>";
       for (const key in feature.properties) {
-        popupContent += `<li><b>${key}:</b> ${feature.properties[key]}</li>`;
+        let value = feature.properties[key];
+
+        // Tarih formatlama
+        if (key === "meclis_karar_tarih" && typeof value === "number") {
+          const date = new Date(value);
+          value = date.toLocaleString("tr-TR");
+        }
+
+        popupContent += `<li><b>${key}:</b> ${value}</li>`;
       }
       popupContent += "</ul>";
       layer.bindPopup(popupContent);
 
-      // alan_adi etiket olarak haritaya yaz
+      // Etiket olarak alan_adi göster (ancak zoom 16 ve üstü için)
       if (feature.properties.alan_adi) {
         const center = layer.getBounds().getCenter();
-        L.marker(center, {
+        const label = L.marker(center, {
           icon: L.divIcon({
             className: 'label-text',
             html: feature.properties.alan_adi,
             iconSize: [100, 20]
           })
-        }).addTo(map);
+        });
+        label.addTo(map);
+        labelMarkers.push(label);
       }
     }
 
@@ -95,7 +108,22 @@
           style: style,
           onEachFeature: onEachFeature
         }).addTo(map);
+        updateLabels(); // ilk açılışta kontrol et
       });
+
+    // Zoom seviyesine göre yazı etiketlerini göster/gizle
+    map.on("zoomend", updateLabels);
+
+    function updateLabels() {
+      const show = map.getZoom() >= 16;
+      labelMarkers.forEach(marker => {
+        if (show) {
+          map.addLayer(marker);
+        } else {
+          map.removeLayer(marker);
+        }
+      });
+    }
 
     // Lejant
     const legend = L.control({ position: "bottomright" });
