@@ -44,20 +44,20 @@
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    // Renkler tür numarasına göre atanıyor
+    // Renkler: tur alanına göre
     function getColor(tur) {
-      switch (tur) {
-        case 1: return "#00FF00"; // 5393 EBB Yetkisinde (Yeşil)
-        case 2: return "#FFA500"; // 5393 EBB Yetkisi Dışında (Turuncu)
-        case 3: return "#FF0000"; // 6306 Riskli Alan (Kırmızı)
-        case 4: return "#0000FF"; // 6036 Rezerv Alan (Mavi)
-        default: return "#CCCCCC"; // Diğerleri
+      switch (parseInt(tur)) {
+        case 1: return "#00FF00"; // 5393 EBB Yetkisinde
+        case 2: return "#FFA500"; // 5393 EBB Yetkisi Dışında
+        case 3: return "#FF0000"; // 6306 Riskli Alan
+        case 4: return "#0000FF"; // 6036 Rezerv Alan
+        default: return "#CCCCCC";
       }
     }
 
     function style(feature) {
       return {
-        fillColor: getColor(feature.properties.Türü),
+        fillColor: getColor(feature.properties.tur),
         weight: 1.5,
         opacity: 1,
         color: "#333",
@@ -66,7 +66,7 @@
     }
 
     function onEachFeature(feature, layer) {
-      // Tüm öznitelikleri göster
+      // Tüm öznitelikleri açılır pencerede göster
       let popupContent = "<b>Öznitelik Bilgileri</b><br><ul>";
       for (const key in feature.properties) {
         popupContent += `<li><b>${key}:</b> ${feature.properties[key]}</li>`;
@@ -74,20 +74,20 @@
       popupContent += "</ul>";
       layer.bindPopup(popupContent);
 
-      // Harita üzerinde alan_adı göster
-      if (feature.properties.alan_adı) {
+      // alan_adi etiket olarak haritaya yaz
+      if (feature.properties.alan_adi) {
         const center = layer.getBounds().getCenter();
         L.marker(center, {
           icon: L.divIcon({
             className: 'label-text',
-            html: feature.properties.alan_adı,
+            html: feature.properties.alan_adi,
             iconSize: [100, 20]
           })
         }).addTo(map);
       }
     }
 
-    // Kentsel geojson katmanı
+    // Katmanı yükle
     fetch("data/KENTSEL.geojson")
       .then(res => res.json())
       .then(data => {
