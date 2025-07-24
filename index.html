@@ -140,7 +140,7 @@
             let popup = "<b>Öznitelik Bilgileri:</b><ul>";
             for (let key in props) {
               let value = props[key];
-              if (key === "meclis_karar_tarihi" && value) {
+              if (key === "meclis_karar_tarih" && value) {
                 try {
                   const date = new Date(value);
                   if (!isNaN(date)) {
