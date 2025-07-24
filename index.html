@@ -8,20 +8,22 @@
   <style>
     html, body, #map { margin: 0; height: 100%; }
 
-    .search-box {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
-      background: white;
-      padding: 5px;
-      border-radius: 4px;
-      box-shadow: 0 0 4px #666;
-    }
-
-    .search-box input { padding: 5px; width: 130px; }
-    .search-box button { padding: 5px; }
-
+  .search-box {
+  position: absolute;
+  top: 12px;
+  left: 60px; /* Zoom butonlarından uzak */
+  z-index: 1000;
+  background: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  max-width: calc(100% - 120px); /* mobilde taşmayı önler */
+  min-width: 250px;
+}
     .label-text {
       font-size: 10px;
       font-weight: bold;
