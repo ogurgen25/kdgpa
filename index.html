@@ -75,25 +75,46 @@
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-    const map = L.map("map");
-    let parselLayer, parselLabels = L.layerGroup(), kentselLabels = L.layerGroup();
+  const map = L.map("map");
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  // Esri Satellite altlığı
+  const esriSat = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles © Esri"
+    }
+  );
+
+  // OSM altlığı
+  const osm = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 20,
       attribution: "© OpenStreetMap"
-    }).addTo(map);
-
-    function createLabel(text, center) {
-      return L.marker(center, {
-        icon: L.divIcon({
-          className: 'label-text',
-          html: text,
-          iconSize: null,
-          iconAnchor: [0, 0]
-        }),
-        interactive: false
-      });
     }
+  );
+
+  // Başlangıçta OSM açık
+ esriSat.addTo(map);
+
+  // Altlık katmanlarını kullanıcı seçebilir
+  const baseMaps = {
+    "OSM Harita": osm,
+    "Uydu ": esriSat
+  };
+  L.control.layers(baseMaps).addTo(map);
+
+  let parselLayer, parselLabels = L.layerGroup(), kentselLabels = L.layerGroup();
+
+  function createLabel(text, center) {
+    return L.marker(center, {
+      icon: L.divIcon({
+        className: 'label-text',
+        html: text,
+        iconSize: null,
+        iconAnchor: [0, 0]
+      }),
+      interactive: false
+    });
+  }
 
     // === KENTSEL ===
     fetch("data/KENTSEL.geojson")
